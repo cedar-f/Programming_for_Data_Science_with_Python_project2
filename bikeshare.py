@@ -2,31 +2,59 @@ import time
 import pandas as pd
 import numpy as np
 
-CITY_DATA = { 'chicago': 'chicago.csv',
-              'new york city': 'new_york_city.csv',
-              'washington': 'washington.csv' }
+CITY_DATA = {'chicago': 'chicago.csv',
+             'new york city': 'new_york_city.csv',
+             'washington': 'washington.csv'}
+
+MONTH = np.array(['january', 'february', 'march', 'april', 'may', 'june'])
+
+WEEKDAYS = np.array(['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'])
+
+QUESTION_LIST = {
+    'city': 'Which city(ies) do you want do select data? Use commas to list the names.'
+    , 'month': 'Which month(s) do you want do filter data? Use commas to list the names.'
+    , 'weekday': 'Which weekday(s) do you want do filter data? Use commas to list the names.'
+}
+
+
+def get_user_choice(prompt, valid_choice):
+    """ check user answer is valid or not and return it"""
+
+    valid_choice = np.array(valid_choice)
+
+    prompt = prompt + '\n(valid answer: ' + ','.join(valid_choice) + ' )\n>'
+    while True:
+        choice = input(prompt.lower())
+        choice_arr = np.char.strip(np.array(choice.lower().split(',')))
+        is_valid_choice = np.isin(choice_arr, valid_choice)
+        invalid_choice = [str(choice_arr[index]) for index, value in enumerate(is_valid_choice) if not value]
+        if len(invalid_choice) > 0:
+            print(
+                f'Something is not right. Please mind the formatting and be sure to enter a valid option\n Invalid answer {",".join(invalid_choice)}')
+        else:
+            return choice_arr
 
 def get_filters():
     """
     Asks user to specify a city, month, and day to analyze.
 
     Returns:
-        (str) city - name of the city to analyze
-        (str) month - name of the month to filter by, or "all" to apply no month filter
-        (str) day - name of the day of week to filter by, or "all" to apply no day filter
+        (ndarray) city - name of the city to analyze
+        (ndarray) month - name of the month to filter by, or "all" to apply no month filter
+        (ndarray) day - name of the day of week to filter by, or "all" to apply no day filter
     """
+
     print('Hello! Let\'s explore some US bikeshare data!')
-    # get user input for city (chicago, new york city, washington). HINT: Use a while loop to handle invalid inputs
+    print('-' * 40)
 
+    cities = get_user_choice(QUESTION_LIST['city'], list(CITY_DATA.keys()))
+    print('-' * 30)
+    months = get_user_choice(QUESTION_LIST['month'], MONTH)
+    print('-' * 30)
+    days = get_user_choice(QUESTION_LIST['weekday'], WEEKDAYS)
 
-    # get user input for month (all, january, february, ... , june)
-
-
-    # get user input for day of week (all, monday, tuesday, ... sunday)
-
-
-    print('-'*40)
-    return city, month, day
+    print('-' * 40)
+    return cities, months, days
 
 
 def load_data(city, month, day):
@@ -41,7 +69,6 @@ def load_data(city, month, day):
         df - Pandas DataFrame containing city data filtered by month and day
     """
 
-
     return df
 
 
@@ -53,15 +80,12 @@ def time_stats(df):
 
     # display the most common month
 
-
     # display the most common day of week
-
 
     # display the most common start hour
 
-
     print("\nThis took %s seconds." % (time.time() - start_time))
-    print('-'*40)
+    print('-' * 40)
 
 
 def station_stats(df):
@@ -72,15 +96,12 @@ def station_stats(df):
 
     # display most commonly used start station
 
-
     # display most commonly used end station
-
 
     # display most frequent combination of start station and end station trip
 
-
     print("\nThis took %s seconds." % (time.time() - start_time))
-    print('-'*40)
+    print('-' * 40)
 
 
 def trip_duration_stats(df):
@@ -91,12 +112,10 @@ def trip_duration_stats(df):
 
     # display total travel time
 
-
     # display mean travel time
 
-
     print("\nThis took %s seconds." % (time.time() - start_time))
-    print('-'*40)
+    print('-' * 40)
 
 
 def user_stats(df):
@@ -107,21 +126,18 @@ def user_stats(df):
 
     # Display counts of user types
 
-
     # Display counts of gender
-
 
     # Display earliest, most recent, and most common year of birth
 
-
     print("\nThis took %s seconds." % (time.time() - start_time))
-    print('-'*40)
+    print('-' * 40)
 
 
 def main():
     while True:
-        city, month, day = get_filters()
-        df = load_data(city, month, day)
+        cities, months, days = get_filters()
+        df = load_data(cities, months, days)
 
         time_stats(df)
         station_stats(df)
@@ -134,4 +150,4 @@ def main():
 
 
 if __name__ == "__main__":
-	main()
+    main()
