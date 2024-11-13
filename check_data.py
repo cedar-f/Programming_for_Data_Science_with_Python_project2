@@ -8,4 +8,8 @@ df=pd.read_csv('./new_york_city.csv')
 #
 # print(df.head())
 
-print(tabulate(df.head(100),headers='keys',tablefmt='psql'))
+# print(tabulate(df.head(100),headers='keys',tablefmt='psql'))
+
+
+a=[1,2,3,4]
+

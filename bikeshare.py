@@ -6,16 +6,18 @@ CITY_DATA = {'chicago': 'chicago.csv',
              'new york city': 'new_york_city.csv',
              'washington': 'washington.csv'}
 
+FILTERS = np.array(['months', 'weekdays', 'both', 'none'])
+
 MONTH = np.array(['january', 'february', 'march', 'april', 'may', 'june'])
 
 WEEKDAYS = np.array(['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'])
 
 QUESTION_LIST = {
     'city': 'Which city(ies) do you want do select data? Use commas to list the names.'
+    , 'filter': 'Would you like to filter data by month,day,both or not at all?'
     , 'month': 'Which month(s) do you want do filter data? Use commas to list the names.'
     , 'weekday': 'Which weekday(s) do you want do filter data? Use commas to list the names.'
 }
-
 
 def get_user_choice(prompt, valid_choice):
     """ check user answer is valid or not and return it"""
@@ -43,32 +45,69 @@ def get_filters():
         (ndarray) month - name of the month to filter by, or "all" to apply no month filter
         (ndarray) day - name of the day of week to filter by, or "all" to apply no day filter
     """
+    months = np.array([])
+    days = np.array([])
 
     print('Hello! Let\'s explore some US bikeshare data!')
     print('-' * 40)
 
     cities = get_user_choice(QUESTION_LIST['city'], list(CITY_DATA.keys()))
     print('-' * 30)
-    months = get_user_choice(QUESTION_LIST['month'], MONTH)
+    filters = get_user_choice(QUESTION_LIST['filter'], FILTERS)
     print('-' * 30)
-    days = get_user_choice(QUESTION_LIST['weekday'], WEEKDAYS)
+
+    if 'both' in filters:
+        months = get_user_choice(QUESTION_LIST['month'], MONTH)
+        print('-' * 30)
+        days = get_user_choice(QUESTION_LIST['weekday'], WEEKDAYS)
+    elif 'months' in filters:
+        months = get_user_choice(QUESTION_LIST['month'], MONTH)
+    elif 'weekdays' in filters:
+        days = get_user_choice(QUESTION_LIST['weekday'], WEEKDAYS)
 
     print('-' * 40)
     return cities, months, days
 
 
-def load_data(city, month, day):
+def load_data(cities, months, days):
     """
     Loads data for the specified city and filters by month and day if applicable.
 
     Args:
-        (str) city - name of the city to analyze
-        (str) month - name of the month to filter by, or "all" to apply no month filter
-        (str) day - name of the day of week to filter by, or "all" to apply no day filter
+        (ndarray) city - name of the city to analyze
+        (ndarray) month - name of the month to filter by, or "all" to apply no month filter
+        (ndarray) day - name of the day of week to filter by, or "all" to apply no day filter
     Returns:
         df - Pandas DataFrame containing city data filtered by month and day
     """
+    print("\nThe program is loading the data for the filters of your choice.")
+    start_time = time.time()
 
+    df = pd.DataFrame([])
+
+    for city in cities:
+        file_name = CITY_DATA[city]
+        print(file_name)
+        if len(df) == 0:
+            df = pd.read_csv(file_name)
+            df.insert(1, 'City', city)
+        else:
+            sub_df = pd.read_csv(file_name)
+            sub_df.insert(1, 'City', city)
+            df = pd.concat([df, sub_df])
+
+    df['Start Time'] = pd.to_datetime(df['Start Time'])
+    df['End Time'] = pd.to_datetime(df['End Time'])
+    df.insert(4, 'Month', pd.to_datetime(df['Start Time']).dt.month_name())
+    df.insert(5, 'Weekday', pd.to_datetime(df['Start Time']).dt.day_name())
+
+    if len(months) > 0:
+        df = df.query('Month.str.lower() in @months', engine='python')
+    if len(days) > 0:
+        df = df.query('Weekday.str.lower() in @days', engine='python')
+
+    print("\nThis took {} seconds.".format((time.time() - start_time)))
+    print('-' * 40)
     return df
 
 
@@ -79,10 +118,16 @@ def time_stats(df):
     start_time = time.time()
 
     # display the most common month
+    most_common_month = df['Month'].mode()[0]
+    print('Most popular month: ' + most_common_month)
 
     # display the most common day of week
+    most_common_weekday = df['Weekday'].mode()[0]
+    print('Most popular weekday: ' + most_common_weekday)
 
     # display the most common start hour
+    most_common_hours = df['Start Time'].dt.hour.mode()[0]
+    print('Most popular hour: ' + str(most_common_hours))
 
     print("\nThis took %s seconds." % (time.time() - start_time))
     print('-' * 40)
@@ -95,10 +140,16 @@ def station_stats(df):
     start_time = time.time()
 
     # display most commonly used start station
+    most_common_start_station = df['Start Station'].mode()[0]
+    print('Most popular start station: ' + most_common_start_station)
 
     # display most commonly used end station
+    most_common_end_station = df['End Station'].mode()[0]
+    print('Most popular end station: ' + most_common_end_station)
 
     # display most frequent combination of start station and end station trip
+    most_common_station_set = ('['+df['Start Station']+'] - ['+df['End Station']+']').mode()[0]
+    print('Most popular of combination between start/end station: ' + most_common_station_set)
 
     print("\nThis took %s seconds." % (time.time() - start_time))
     print('-' * 40)
@@ -111,11 +162,16 @@ def trip_duration_stats(df):
     start_time = time.time()
 
     # display total travel time
+    total_travel_time = (df['End Time'] - df['Start Time']).sum()
+    print('Total travel time: ' + str(total_travel_time))
 
     # display mean travel time
+    mean_travel_time = (df['End Time'] - df['Start Time']).mean() / pd.Timedelta(minutes=1)
+    print('Mean travel time: ' + str(mean_travel_time) + ' minute(s)')
 
     print("\nThis took %s seconds." % (time.time() - start_time))
     print('-' * 40)
+
 
 
 def user_stats(df):
@@ -125,10 +181,27 @@ def user_stats(df):
     start_time = time.time()
 
     # Display counts of user types
+    print('Counts of user types')
+    count_of_user_types=df.groupby('User Type').size()
+    for index, value in count_of_user_types.items():
+        print(f"{index}: {value}")
+
+
 
     # Display counts of gender
+    print('\n\nCounts of genders')
+    count_of_genders=df.groupby('Gender').size()
+    for index, value in count_of_genders.items():
+        print(f"{index}: {value}")
 
     # Display earliest, most recent, and most common year of birth
+    earliest_year=df['Birth Year'].min().astype(int)
+    most_recent_year=df['Birth Year'].max().astype(int)
+    most_popular_year = df['Birth Year'].mode()[0].astype(int)
+    print('\n\nEarliest year: ' + str(earliest_year))
+    print('Most recent year: ' + str(most_recent_year))
+    print('Most popular year: ' + str(most_popular_year))
+
 
     print("\nThis took %s seconds." % (time.time() - start_time))
     print('-' * 40)
