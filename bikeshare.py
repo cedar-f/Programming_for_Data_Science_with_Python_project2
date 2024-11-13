@@ -1,6 +1,7 @@
 import time
 import pandas as pd
 import numpy as np
+from tabulate import tabulate
 
 CITY_DATA = {'chicago': 'chicago.csv',
              'new york city': 'new_york_city.csv',
@@ -19,6 +20,7 @@ QUESTION_LIST = {
     , 'weekday': 'Which weekday(s) do you want do filter data? Use commas to list the names.'
 }
 
+
 def get_user_choice(prompt, valid_choice):
     """ check user answer is valid or not and return it"""
 
@@ -26,7 +28,7 @@ def get_user_choice(prompt, valid_choice):
 
     prompt = prompt + '\n(valid answer: ' + ','.join(valid_choice) + ' )\n>'
     while True:
-        choice = input(prompt.lower())
+        choice = input(prompt)
         choice_arr = np.char.strip(np.array(choice.lower().split(',')))
         is_valid_choice = np.isin(choice_arr, valid_choice)
         invalid_choice = [str(choice_arr[index]) for index, value in enumerate(is_valid_choice) if not value]
@@ -35,6 +37,7 @@ def get_user_choice(prompt, valid_choice):
                 f'Something is not right. Please mind the formatting and be sure to enter a valid option\n Invalid answer {",".join(invalid_choice)}')
         else:
             return choice_arr
+
 
 def get_filters():
     """
@@ -148,7 +151,7 @@ def station_stats(df):
     print('Most popular end station: ' + most_common_end_station)
 
     # display most frequent combination of start station and end station trip
-    most_common_station_set = ('['+df['Start Station']+'] - ['+df['End Station']+']').mode()[0]
+    most_common_station_set = ('[' + df['Start Station'] + '] - [' + df['End Station'] + ']').mode()[0]
     print('Most popular of combination between start/end station: ' + most_common_station_set)
 
     print("\nThis took %s seconds." % (time.time() - start_time))
@@ -173,7 +176,6 @@ def trip_duration_stats(df):
     print('-' * 40)
 
 
-
 def user_stats(df):
     """Displays statistics on bikeshare users."""
 
@@ -181,40 +183,85 @@ def user_stats(df):
     start_time = time.time()
 
     # Display counts of user types
-    print('Counts of user types')
-    count_of_user_types=df.groupby('User Type').size()
-    for index, value in count_of_user_types.items():
-        print(f"{index}: {value}")
+    try:
+        print('Counts of user types')
+        count_of_user_types = df.groupby('User Type').size()
+        for index, value in count_of_user_types.items():
+            print(f"{index}: {value}")
+    except:
+        pass
 
-
-
-    # Display counts of gender
-    print('\n\nCounts of genders')
-    count_of_genders=df.groupby('Gender').size()
-    for index, value in count_of_genders.items():
-        print(f"{index}: {value}")
+    try:
+        # Display counts of gender
+        count_of_genders = df.groupby('Gender').size()
+        print('\n\nCounts of genders')
+        for index, value in count_of_genders.items():
+            print(f"{index}: {value}")
+    except:
+        pass
 
     # Display earliest, most recent, and most common year of birth
-    earliest_year=df['Birth Year'].min().astype(int)
-    most_recent_year=df['Birth Year'].max().astype(int)
-    most_popular_year = df['Birth Year'].mode()[0].astype(int)
-    print('\n\nEarliest year: ' + str(earliest_year))
-    print('Most recent year: ' + str(most_recent_year))
-    print('Most popular year: ' + str(most_popular_year))
-
+    try:
+        earliest_year = df['Birth Year'].min().astype(int)
+        print('\n\nEarliest year: ' + str(earliest_year))
+    except:
+        pass
+    try:
+        most_recent_year = df['Birth Year'].max().astype(int)
+        print('Most recent year: ' + str(most_recent_year))
+    except:
+        pass
+    try:
+        most_popular_year = df['Birth Year'].mode()[0].astype(int)
+        print('Most popular year: ' + str(most_popular_year))
+    except:
+        pass
 
     print("\nThis took %s seconds." % (time.time() - start_time))
     print('-' * 40)
+
+
+def show_raw_data(df):
+    while True:
+        choice = input('Do you want to see raw data? (Press \'y\' for yes and \'n\' for no)\n>')
+        if choice == 'y':
+            total_row = df.shape[0]
+            continue_show = 1
+            begin_index = 0
+            while continue_show == 1:
+                print(f'row {begin_index + 1} - {begin_index + 5} of total {total_row} rows\n')
+                print(tabulate(df.iloc[begin_index: begin_index + 5], headers='keys', tablefmt='psql'))
+                begin_index = begin_index + 5
+                choice_continue = input(
+                    'Do you want to go to next page? (Press \'y\' to continue and \'n\' for exit)\n>')
+                if choice_continue == 'y':
+                    continue_show = 1
+                elif choice_continue == 'n':
+                    continue_show = 0
+                    break
+                else:
+                    print('Invalid answer, please type again\n')
+                    input("Press any key to continue...")
+            break
+        elif choice == 'n':
+            break
+
+        else:
+            print('Invalid answer, please type again\n')
+            input("Press any key to continue...")
 
 
 def main():
     while True:
         cities, months, days = get_filters()
         df = load_data(cities, months, days)
-
+        show_raw_data(df)
         time_stats(df)
+        input("Press any key to continue...\n" + "-" * 30)
         station_stats(df)
+        input("Press any key to continue...\n" + "-" * 30)
         trip_duration_stats(df)
+        input("Press any key to continue...\n" + "-" * 30)
         user_stats(df)
 
         restart = input('\nWould you like to restart? Enter yes or no.\n')
